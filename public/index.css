@@ -1,0 +1,61 @@
+*{
+    box-sizing: border-box;
+}
+.container{
+    position:relative;
+    display: inline-block;
+}
+.s-container{
+    position:absolute;
+    display:flex;
+    width: 100%;
+    align-items: center;
+    padding:20px;
+}
+.health-bar-mask{
+    background-color:yellow;
+    height:30px;
+    width:100%;
+}
+.health-bar{
+    position:absolute;
+    background-color:blue;
+    top:0;
+    right:0;
+    bottom:0;
+}
+.health-bar-shell{
+    position:relative;
+    height:30px;
+    width:100%;
+}
+.player-health-mask{
+    display: flex;
+    justify-content: flex-end;
+}
+.player-health{
+    width: 100%;
+}
+.enemy-health{
+    left: 0;
+}
+.timer{
+    background-color:red;
+    width:100px;
+    height:50px;
+    flex-shrink:0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.displayText{
+    position:absolute;
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    top:0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
