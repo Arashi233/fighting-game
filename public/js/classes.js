@@ -12,7 +12,7 @@ class Sprite{
         this.framesCurrent = 0
         //経った時間
         this.framesElapsed = 0
-        this.framesHold = 15
+        this.framesHold = 5
         this.offset = offset 
     }
     draw(){
@@ -122,7 +122,11 @@ class Fighter extends Sprite{
         }else if(this.velocity.y > 0){
             this.switchSprite('fall');
         }
-
+        if(this.toward === 0){
+            this.attackBox.offset.x = 30;
+        }else{
+            this.attackBox.offset.x = -125;
+        }
     }
     update(){
         this.draw()

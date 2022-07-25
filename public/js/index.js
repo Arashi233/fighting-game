@@ -7,7 +7,9 @@ const ch = canvas.height = 576;
 let kenjiNowFramesCurrent = 0;
 let samuraiNowFramesCurrent = 0;
 let gameState = true;
-let inputDirection = null
+let recvCommands = new Array();
+let inputDirection = null;
+let timer = 60;
 //背景を描く
 //重力
 const gravity = 0.3;
@@ -27,6 +29,7 @@ const shop = new Sprite({
         x:760,
         y:224
     },
+     
     imageSrc:'./img/shop.png',
     scale : 2,
     framesMax:6
@@ -118,7 +121,7 @@ var newGame = function(id){
                 x:35,
                 y:50
             },
-            width:170,
+            width:150,
             height:50
         }
     });
@@ -200,11 +203,82 @@ enemy = new Fighter({
 }
 const startGame = new newGame();
 
-decreaseTimer();
+decreaseTimer(timer);
+
 $(function () {
     animate();
+    socket = io.connect('http://localhost:3000/');
+    socket.emit("join",{id:1,timer});
+    socket.on('open',function(json){
+        console.log('plaery2 is connected');
+    })
+    socket.on('message',function(json){
+        timer = json.time;
+        if(json.type === 'keydown'){
+            switch(json.direction){
+                case 'd':
+                    keys.d.pressed = true;
+                    player.lastKey = 'd';
+                    break;
+                case 'a' :
+                    keys.a.pressed = true;
+                    player.lastKey = 'a';
+                    break;
+                case 'w' :
+                    if(player.position.y + player.height >= ch-96){
+                        player.velocity.y = -11;
+                    }
+                    break;
+                case ' ':
+                    player.attack();
+                    break;
+                case 'ArrowRight':
+                    keys.ArrowRight.pressed = true;
+                    enemy.lastKey = 'ArrowRight'
+                    break;
+                case 'ArrowLeft' :
+                    keys.ArrowLeft.pressed = true;
+                    enemy.lastKey = 'ArrowLeft';
+                    break;
+                case 'ArrowUp' :
+                    keys.ArrowUp.pressed = true;
+                    if(enemy.position.y + enemy.height >= ch -96){
+                        enemy.velocity.y = -11;
+                    }
+                    break;
+                case '0' :
+                    enemy.attack();
+                    break;
+            }
+        }else{
+            switch(json.direction){
+                case 'd':
+                    keys.d.pressed = false;
+                    break;
+                case 'a' :
+                    keys.a.pressed = false;
+                    break;
+                case 'ArrowRight':
+                    keys.ArrowRight.pressed = false;
+                    break;
+                case 'ArrowLeft' :
+                    keys.ArrowLeft.pressed = false;
+                    break;
+            }
+            
+            inputDirection = null;
 
+        }
+    })
 })
+function sendCommand(type){
+    var direction = inputDirection
+    socket.emit("message", {
+        direction: direction,
+        type:type,
+        time:timer
+    })
+}
 //無限ループアニメーション
 function animate(){
     window.requestAnimationFrame(animate);
@@ -215,7 +289,7 @@ function animate(){
     enemy.move();
     enemy.update();
     //攻撃判定
-    
+    game();
     //向き
     if(towardConditional({rectangle1:player,rectangle2:enemy})){
         player.toward = 0;
@@ -265,87 +339,78 @@ function game(){
         gameState = false;
     }
 }
-function setData(msg){
-    player.position = msg.player.position;
-    player.velocity = msg.player.velocity;
-    player.isAttacking = msg.player.isAttacking;
-    player.toward = msg.player.toward;
-    player.attackBox = msg.player.attackBox;
-    player.health = msg.player.health;
-    enemy.position = msg.enemy.position;
-    enemy.velocity = msg.enemy.velocity;
-    enemy.isAttacking = msg.enemy.isAttacking;
-    enemy.toward = msg.enemy.toward;
-    enemy.attackBox = msg.enemy.attackBox;
-    enemy.health = msg.enemy.health;
-    keys.a.pressed = msg.keys.a.pressed;
-    keys.d.pressed = msg.keys.d.pressed;
-    keys.ArrowRight.pressed = msg.keys.ArrowRight.pressed;
-    keys.ArrowLeft.pressed = msg.keys.ArrowLeft.pressed;
-    keys.ArrowUp.pressed = msg.keys.ArrowUp.pressed;
-}
+
 //イベントリスナー
 window.addEventListener('keydown',(event)=>{
     if(gameState){
-        console.log(event)
         switch(event.key){
             case 'd':
+                inputDirection = 'd'
                 keys.d.pressed = true;
                 player.lastKey = 'd';
                 break;
             case 'a' :
-                
+                inputDirection = 'a'
                 keys.a.pressed = true;
                 player.lastKey = 'a';
                 break;
             case 'w' :
                 //ジャンプ一回のみ
-                
+                inputDirection = 'w'
                 if(player.position.y + player.height >= ch-96){
                     player.velocity.y = -11;
                 }
                 break;
             case ' ':
+                inputDirection = ' '
                 player.attack();
                 break;
             case 'ArrowRight':
                 
+                inputDirection = 'ArrowRight'
                 keys.ArrowRight.pressed = true;
                 enemy.lastKey = 'ArrowRight'
                 break;
             case 'ArrowLeft' :
-                
+                inputDirection = 'ArrowLeft'
                 keys.ArrowLeft.pressed = true;
                 enemy.lastKey = 'ArrowLeft';
                 break;
             case 'ArrowUp' :
-                
+                inputDirection = 'ArrowUp'
                 keys.ArrowUp.pressed = true;
                 if(enemy.position.y + enemy.height >= ch -96){
                     enemy.velocity.y = -11;
                 }
                 break;
             case '0' :
+                inputDirection = '0'
                 enemy.attack();
                 break;
         }
+        sendCommand('keydown');
     }
 })
 window.addEventListener('keyup',(event)=>{
     switch(event.key){
         case 'd':
+            inputDirection = 'd'
             keys.d.pressed = false;
             break;
         case 'a' :
+            inputDirection = 'a'
             keys.a.pressed = false;
             break;
     }
     switch(event.key){
         case 'ArrowRight':
+            inputDirection = 'ArrowRight'
             keys.ArrowRight.pressed = false;
             break;
         case 'ArrowLeft' :
+            inputDirection = 'ArrowLeft'
             keys.ArrowLeft.pressed = false;
             break;
     }
+    sendCommand('keyup');
 })

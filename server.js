@@ -4,17 +4,20 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const path = require('path');
 const fs = require('fs');
+let timer = 60;
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 //开发静态资源
 app.use(express.static('./'));
 io.on('connection', function(socket){
-  socket.on("join", function (name) {
-    console.log(io)
+  socket.emit("open", {id:1})
+  socket.on("join", function (id) {
+    console.log(id+"is ")
   })
 
   socket.on("message", function (msg) {
+    msg.time = timer;
     io.emit("message", msg) //将新消息广播出去
   })
   socket.on('disconnect', function(msg){
