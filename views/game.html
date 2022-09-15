@@ -4,12 +4,18 @@
 <meta charset='utf-8'>
 <title></title>
 <link type="text/css" rel="stylesheet" href="./public/index.css" />
+<link rel="stylesheet" type="text/css" href="./public/main.css">gi
 <script src = "./public/js/jquery.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-
-    <div class="container">
+    <div id="login">
+		<p id="title">ファイティングゲーム</p>
+		<input type="text" id="account" />
+		<button id="start_btn">ゲーム開始</button>
+	</div>
+    <div id="tips"></div>
+    <div class="container" style="display:none">
         <div class="s-container">
             <!-- player health -->
             <div class="health-bar-shell">
@@ -28,7 +34,6 @@
         <canvas id="cv1"></canvas>
     </div>
 </body>
-
 <script src = "./public/js/utils.js"></script>
 <script src = "./public/js/classes.js"></script>
 <script src = "./public/js/index.js"></script>

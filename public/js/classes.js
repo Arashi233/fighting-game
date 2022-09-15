@@ -12,7 +12,7 @@ class Sprite{
         this.framesCurrent = 0
         //経った時間
         this.framesElapsed = 0
-        this.framesHold = 5
+        this.framesHold = 15
         this.offset = offset 
     }
     draw(){
@@ -51,6 +51,7 @@ class Fighter extends Sprite{
         id,
         position,
         velocity,
+        direction,
         color = 'red',
         offset = {x:0,y:0},
         imageSrc,
@@ -75,12 +76,14 @@ class Fighter extends Sprite{
             framesMax,
             offset,
         })
+        this.id = id
         this.velocity = velocity
         this.imageSrc2 = imageSrc2
         this.attacktime = attacktime
         this.width = 50
         this.height = 150
         this.lastKey
+        this.direction
         this.attackBox = {
             position:{
                 x:this.position.x,
@@ -108,20 +111,15 @@ class Fighter extends Sprite{
     }
     move(){
         this.velocity.x = 0;
-        if((keys.a.pressed && this.lastKey === 'a') ||  ( keys.ArrowLeft.pressed && this.lastKey === 'ArrowLeft')){
+        if(keys.a.pressed){
             this.velocity.x = -5;
-            this.switchSprite('run');
-        }else if((keys.d.pressed && this.lastKey === 'd')  ||  (keys.ArrowRight.pressed && this.lastKey === 'ArrowRight')){
+        }else if(keys.d.pressed){
             this.velocity.x = 5;
-            this.switchSprite('run');
-        }else{
-            this.switchSprite('idle');
         }
-        if(this.velocity.y < 0){
-            this.switchSprite('jump');
-        }else if(this.velocity.y > 0){
-            this.switchSprite('fall');
+        if(this.position.y + this.height >= ch-96 && this.lastKey === 'w'){
+            this.velocity.y = -11;
         }
+       
         if(this.toward === 0){
             this.attackBox.offset.x = 30;
         }else{
@@ -144,6 +142,23 @@ class Fighter extends Sprite{
         if(this.position.y + this.height+this.velocity.y>=ch-96){
             this.velocity.y = 0
         }else this.velocity.y += gravity;
+    }
+    updateSprite(){
+        if(keys.a.pressed){
+            this.switchSprite('run');
+        }else if(keys.d.pressed){
+            this.switchSprite('run');
+        }else{
+            this.switchSprite('idle');
+        }
+        if(this.velocity.y < 0){
+            this.switchSprite('jump');
+        }else if(this.velocity.y > 0){
+            this.switchSprite('fall');
+        }else{
+            this.switchSprite('idle');
+
+        }
     }
     attack(){
         this.switchSprite('attack1');
