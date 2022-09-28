@@ -144,9 +144,7 @@ class Fighter extends Sprite{
         }else this.velocity.y += gravity;
     }
     updateSprite(){
-        if(keys.a.pressed){
-            this.switchSprite('run');
-        }else if(keys.d.pressed){
+        if(this.velocity.x != 0){
             this.switchSprite('run');
         }else{
             this.switchSprite('idle');
@@ -155,9 +153,6 @@ class Fighter extends Sprite{
             this.switchSprite('jump');
         }else if(this.velocity.y > 0){
             this.switchSprite('fall');
-        }else{
-            this.switchSprite('idle');
-
         }
     }
     attack(){
