@@ -1,7 +1,7 @@
 /** @type {HTMLCanvasElement} */
 
 // 游戏状态枚举
-var STATUS = {
+const STATUS = {
 	WAIT:1,
 	START:2
 }
@@ -10,22 +10,22 @@ const c = canvas.getContext('2d');
 
 const cw = canvas.width = 1024;
 const ch = canvas.height = 576;
-// 每个step的间隔ms，服务器返回
-var stepInterval = 0
-// 当前step时间戳
-var stepTime = 0
-// 游戏状态
-var gameStatus = 2
-// 所有游戏对象
-var gameObjects = {}
-// 是否连接socket
-var isConnected = false
-// 当前执行中的指令
-var runningCommands = null
-// 当前用户
-var currentAccount = null
-// 是否正在加速运行延迟到达的包
-var isFastRunning = false;
+// STEP　ms
+let stepInterval = 0
+// STEPタイム
+let stepTime = 0
+// ゲーム状態
+let gameStatus = 2
+// ゲームOBJ
+let gameObjects = {}
+// SOCKETアクセスしてるか
+let isConnected = false
+// 実行中コマンド
+let runningCommands = null
+// ユーザー
+let currentAccount = null
+// 遅延
+let isFastRunning = false;
 
 let kenjiNowFramesCurrent = 0;
 let samuraiNowFramesCurrent = 0;
@@ -41,11 +41,7 @@ let enemy = null;
 let lastUpdate = Date.now()
 let now = Date.now()
 let dt = now - lastUpdate
-// 游戏状态枚举
-var STATUS = {
-	WAIT:1,
-	START:2
-}
+
 //背景image
 const background = new Sprite({
     position:{
@@ -72,17 +68,8 @@ const keys = {
     d:{
         pressed :false
     },
-    ArrowLeft:{
-        pressed :false
-    },
-    ArrowRight:{
-        pressed :false
-    },
-    ArrowUp:{
-        pressed :false
-    },
 }
-var newGame = function(id){
+let newGame = function(id){
     player = new Fighter({
         position:{
             x:250,
@@ -244,7 +231,7 @@ $(function () {
 		id = json.id
         console.log("Socketアクセス成功：", id)
     })
-    // 开始游戏
+    // ゲーム開始
 	$('#start_btn').click(function(){
 		currentAccount = $("#account").val()
 		if(isConnected == false) {
@@ -255,11 +242,11 @@ $(function () {
 			socket.emit("join", currentAccount)
 		}
 	})
-    // 收到系统消息
+    // メッセージ受け
 	socket.on('system',function(msg) {
 		showTips(msg)
 	})
-    // 收到加入游戏结果
+    // ゲーム参加のメッセージを受け
 	socket.on('join',function(json) {
 		showTips(json.message)
 		if(json.result) {
@@ -267,7 +254,7 @@ $(function () {
 			$("#content").show()
 		}
 	})
-    // 收到游戏开始事件
+    // ゲーム開始メッセージを受け
 	socket.on('start',function(json) {
         const startGame = new newGame();
         gameObjects[json.player[0]] = player
@@ -283,18 +270,18 @@ $(function () {
     socket.on('message',function(json){
         console.log(json)
         if(gameStatus == 1) {
-            var command = json
+            let command = json
             recvCommands.push(command)
             stepTime = command.step
-            var stepUpdateCounter = 0
-            var lastUpdate = Date.now()
-            // TODO: 逻辑/UI分离
+            let stepUpdateCounter = 0
+            let lastUpdate = Date.now()
+            
             stepUpdateCounter += dt
             if(stepUpdateCounter >= stepInterval) {
                 stepUpdateCounter -= stepInterval
             }
 
-            // 执行指令
+            // コマンド実行
             if(json.type === 'keydown'){
                 switch(command['direction']){
                     case 'd':
@@ -333,8 +320,8 @@ $(function () {
                 }
                 inputDirection = null;
             }
-				for (var i = 0; i < recvCommands.length; i++) {
-					var obj = gameObjects[command.id]
+				for (let i = 0; i < recvCommands.length; i++) {
+					let obj = gameObjects[command.id]
                     // console.log(recvCommands[i]['direction'])
                     obj.lastKey = recvCommands[i]['direction']
                     if(obj.lastKey === ' '){
@@ -347,13 +334,13 @@ $(function () {
         }
     })
 })
-// 发送指令
+// コマンド送る
 function sendCommand(type) {
     if(isFastRunning) {
         console.log("waiting")
         return
     }
-    var direction = inputDirection
+    let direction = inputDirection
     
     socket.emit("message", {
         direction: direction,
@@ -457,9 +444,9 @@ window.addEventListener('keyup',(event)=>{
 })
 
 function showTips(str) {
-	var width = str.length * 20 + 50
-	var halfScreenWidth = $(window).width() / 2
-	var halfScreenHeight = $(window).height() / 2
+	let width = str.length * 20 + 50
+	let halfScreenWidth = $(window).width() / 2
+	let halfScreenHeight = $(window).height() / 2
 	$("#tips").stop()
 	$("#tips").show()
 	$("#tips").text(str)
