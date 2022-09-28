@@ -6,29 +6,26 @@ const path = require('path');
 const fs = require('fs');
 const userList = new Array();
 const router = require('./router')
-let g_onlines = {} // 所有在线玩家
-let g_commands = new Array() // 指令数组
-let g_commands_histroy = new Array() // 历史指令，用于断线重连
-let g_joinCount = 0 // 已准备的人数
+let g_onlines = {} // オンラインユーザー
+let g_commands = new Array() // コマンド
+let g_joinCount = 0 // 入った人数
 let g_maxJoinCount = 2 // 最大人数
-let g_stepTime = 0 // 当前step时间戳
-let g_stepInterval = 100 // 每个step的间隔ms
+let g_stepTime = 0 // step
+let g_stepInterval = 100 // step　ms
 
-// 游戏状态枚举
 const STATUS = {
 	WAIT:1,
 	START:2
 }
 let g_gameStatus = STATUS.WAIT;
 let timer = 60;
-//开发静态资源
 app.engine('html',require('express-art-template'))
 app.use(express.static('./'));
 app.use(router)
 io.on('connection', function(socket){
   socket.emit("open", {id:socket.id, stepInterval:g_stepInterval})
 
-	// 获取用户账户
+	//ユーザーID
 	function getAccount(socketId) {
 		for(let key in g_onlines) {
 			if(socketId == g_onlines[key].socket.id) {
@@ -38,14 +35,14 @@ io.on('connection', function(socket){
 	}
 
 	socket.on('join', function(account) {
-		// 加入游戏
+		// ゲーム参加
 		if(g_joinCount < g_maxJoinCount) {
 			console.log(account, "参加した")
 			socket.emit('join', {result:true, message:"マッチング中..."})
 			g_onlines[account] = {socket: socket, online: true}
 			g_joinCount++
 		}
-		// 开始游戏
+		// ゲーム開始
 		if(g_joinCount == g_maxJoinCount) {
 			g_commands = new Array()
 			g_commands_histroy = new Array()
@@ -85,13 +82,12 @@ io.on('connection', function(socket){
 		}
 	})
   socket.emit("open", {userList:userList})
-  //有人加入
   socket.on("join", function (id) {
     userList.push(this.id);
   })
 
   socket.on("message", function (msg) {
-    io.emit("message", msg) //将新消息广播出去
+    io.emit("message", msg) 
   })
   socket.on('disconnect', function(msg){
     io.emit('end',socket.name)
@@ -99,9 +95,7 @@ io.on('connection', function(socket){
   
 });
 
-// step定时器
 function stepUpdate() {
-	// 过滤同帧多次指令
 	let message = {}
 	for(let key in g_onlines) {
 		message[key] = {step:g_stepTime, id:key}
@@ -113,7 +107,7 @@ function stepUpdate() {
 	}
 	g_commands = new Array()
 
-	// 发送指令
+	// コマンド送る
 	let commands = new Array()
 	for(let key in message) {
 		commands.push(message[key])
