@@ -1,9 +1,9 @@
 ﻿# fighting-game
-需要的npm：socket.io express express-art-template
+必要npm：socket.io express express-art-template
 
-下载
+ダウンロード
 ```git clone https://github.com/Arashi233/fighting-game.git```
 
 
-执行
+実行
 ```node server.js```
