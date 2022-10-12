@@ -231,6 +231,11 @@ $(function () {
 		id = json.id
         console.log("Socketアクセス成功：", id)
     })
+    let par = window.location.href.split("?")[1]
+    if(par){
+        currentAccount = par.split("=")[1]
+        socket.emit("join", currentAccount)
+    }
     // ゲーム開始
 	$('#start_btn').click(function(){
 		currentAccount = $("#account").val()
@@ -241,6 +246,10 @@ $(function () {
 		} else {
 			socket.emit("join", currentAccount)
 		}
+	})
+    //もう一度プレイ
+    $('#again_btn').click(function(){
+        $(location).attr('href',"?account="+currentAccount);
 	})
     // メッセージ受け
 	socket.on('system',function(msg) {

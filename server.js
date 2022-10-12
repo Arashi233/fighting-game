@@ -47,14 +47,10 @@ io.on('connection', function(socket){
 			g_commands = new Array()
 			g_commands_histroy = new Array()
 			g_gameStatus = 1
+			g_joinCount = 0
 			io.sockets.emit('start', {player:Object.keys(g_onlines)})
 		}
-
-		socket.on('param',function(json){
-			console.log(json)
-		})
 	})
-
 	socket.on('timeSync', function(time) {
 		socket.emit('timeSync', {client:time, server:Date.now()})
 	})

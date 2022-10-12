@@ -17,6 +17,7 @@ function towardConditional ({rectangle1,rectangle2}){
 function determineWinner({player,enemy,timerId}){
     clearTimeout(timerId);
     document.querySelector('#displayText').style.display = 'flex';
+    $('.again').show();
     if(player.health === enemy.health){
         document.querySelector('#displayText').innerHTML = 'Tie';
     }else if(player.health > enemy.health){

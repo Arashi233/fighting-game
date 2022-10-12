@@ -49,6 +49,7 @@
     justify-content: center;
 }
 .displayText{
+    height: 90.5%;
     position:absolute;
     color: white;
     display: none;
@@ -58,4 +59,9 @@
     right: 0;
     bottom: 0;
     left: 0;
+}
+.again{
+    display: none;
+    width: 100px;
+    margin: 0 auto;
 }
