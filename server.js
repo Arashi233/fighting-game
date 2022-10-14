@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const userList = new Array();
 const router = require('./router')
-let g_onlines = {} // オンラインユーザー
+let g_onlines = [] // オンラインユーザー
 let g_commands = new Array() // コマンド
 let g_joinCount = 0 // 入った人数
 let g_maxJoinCount = 2 // 最大人数
@@ -34,12 +34,13 @@ io.on('connection', function(socket){
 		}
 	}
 
-	socket.on('join', function(account) {
+	socket.on('join', function(json) {
 		// ゲーム参加
 		if(g_joinCount < g_maxJoinCount) {
-			console.log(account, "参加した")
+			console.log(json['account'], "参加した")
 			socket.emit('join', {result:true, message:"マッチング中..."})
-			g_onlines[account] = {socket: socket, online: true}
+			let userData = {account:json['account'],socket: socket.id, online: true};
+			g_onlines.push(userData)
 			g_joinCount++
 		}
 		// ゲーム開始
@@ -48,7 +49,7 @@ io.on('connection', function(socket){
 			g_commands_histroy = new Array()
 			g_gameStatus = 1
 			g_joinCount = 0
-			io.sockets.emit('start', {player:Object.keys(g_onlines)})
+			io.sockets.emit('start', JSON.stringify(g_onlines))
 		}
 	})
 	socket.on('timeSync', function(time) {
@@ -77,7 +78,6 @@ io.on('connection', function(socket){
 			}
 		}
 	})
-  socket.emit("open", {userList:userList})
   socket.on("join", function (id) {
     userList.push(this.id);
   })

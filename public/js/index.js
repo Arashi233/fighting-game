@@ -24,9 +24,10 @@ let isConnected = false
 let runningCommands = null
 // ユーザー
 let currentAccount = null
+let currentId = null
 // 遅延
 let isFastRunning = false;
-
+let id = 0;
 let kenjiNowFramesCurrent = 0;
 let samuraiNowFramesCurrent = 0;
 let gameState = true;
@@ -228,23 +229,28 @@ $(function () {
     socket.on('open', function(json) {
         isConnected = true
         stepInterval = json.stepInterval
-		id = json.id
-        console.log("Socketアクセス成功：", id)
     })
     let par = window.location.href.split("?")[1]
     if(par){
         currentAccount = par.split("=")[1]
-        socket.emit("join", currentAccount)
+        socket.emit("join", {
+            account:currentAccount,
+            id:currentId
+        })
     }
     // ゲーム開始
 	$('#start_btn').click(function(){
-		currentAccount = $("#account").val()
+		currentAccount = $("#account").val();
+        currentId = socket.id;
 		if(isConnected == false) {
 			showTips("アクセス失败！")
 		} else if(currentAccount == "") {
 			showTips("idを入力してください。")
 		} else {
-			socket.emit("join", currentAccount)
+			socket.emit("join", {
+                account:currentAccount,
+                id:currentId
+            })
 		}
 	})
     //もう一度プレイ
@@ -266,10 +272,11 @@ $(function () {
     // ゲーム開始メッセージを受け
 	socket.on('start',function(json) {
         const startGame = new newGame();
-        gameObjects[json.player[0]] = player
-        gameObjects[json.player[1]] = enemy
-        
+        jsonData = JSON.parse(json)
+        gameObjects[jsonData[0].socket] = player
+        gameObjects[jsonData[1].socket] = enemy
 		stepTime = 0
+        // socket.emit('gameObj',)
         $(".container").show()
 		showTips("ゲーム開始")
         decreaseTimer();
@@ -277,7 +284,6 @@ $(function () {
         gameStatus = 1;
 	})
     socket.on('message',function(json){
-        console.log(json)
         if(gameStatus == 1) {
             let command = json
             recvCommands.push(command)
@@ -330,8 +336,7 @@ $(function () {
                 inputDirection = null;
             }
 				for (let i = 0; i < recvCommands.length; i++) {
-					let obj = gameObjects[command.id]
-                    // console.log(recvCommands[i]['direction'])
+					let obj = gameObjects[command.socketId]
                     obj.lastKey = recvCommands[i]['direction']
                     if(obj.lastKey === ' '){
                         obj.attack();
@@ -355,7 +360,8 @@ function sendCommand(type) {
         direction: direction,
         step:stepTime,
         type:type,
-        id:currentAccount
+        id:currentAccount,
+        socketId:currentId
     })
 }
 //無限ループアニメーション
