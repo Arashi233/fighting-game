@@ -10,6 +10,7 @@ const c = canvas.getContext('2d');
 
 const cw = canvas.width = 1024;
 const ch = canvas.height = 576;
+let animateId = 0;
 // STEP　ms
 let stepInterval = 0
 // STEPタイム
@@ -27,7 +28,6 @@ let currentAccount = null
 let currentId = null
 // 遅延
 let isFastRunning = false;
-let id = 0;
 let kenjiNowFramesCurrent = 0;
 let samuraiNowFramesCurrent = 0;
 let gameState = true;
@@ -226,7 +226,9 @@ let newGame = function(id){
 
 $(function () {
     socket = io.connect('http://localhost:3000/');
+    
     socket.on('open', function(json) {
+        currentId = socket.id;
         isConnected = true
         stepInterval = json.stepInterval
     })
@@ -241,6 +243,7 @@ $(function () {
     // ゲーム開始
 	$('#start_btn').click(function(){
 		currentAccount = $("#account").val();
+        
         currentId = socket.id;
 		if(isConnected == false) {
 			showTips("アクセス失败！")
@@ -269,6 +272,9 @@ $(function () {
 			$("#content").show()
 		}
 	})
+    socket.on('timeSync',function(json){
+        console.log(json)
+    })
     // ゲーム開始メッセージを受け
 	socket.on('start',function(json) {
         const startGame = new newGame();
@@ -276,14 +282,48 @@ $(function () {
         gameObjects[jsonData[0].socket] = player
         gameObjects[jsonData[1].socket] = enemy
 		stepTime = 0
+
         // socket.emit('gameObj',)
         $(".container").show()
 		showTips("ゲーム開始")
         decreaseTimer();
         animate();
         gameStatus = 1;
+        socket.emit('inigameobj',{
+            player:{
+                position:player.position,
+                velocity:player.velocity,
+                health:player.health,
+                lastKey:player.lastKey,
+                height:player.height,
+                keys:{
+                    a:{
+                        pressed :false
+                    },
+                    d:{
+                        pressed :false
+                    },
+                }
+            },
+            enemy:{
+                position:enemy.position,
+                velocity:enemy.velocity,
+                health:enemy.health,
+                lastKey:enemy.lastKey,
+                height:enemy.height,
+                keys:{
+                    a:{
+                        pressed :false
+                    },
+                    d:{
+                        pressed :false
+                    },
+                }
+            }
+        })
 	})
     socket.on('message',function(json){
+        console.log(json)
         if(gameStatus == 1) {
             let command = json
             recvCommands.push(command)
@@ -366,7 +406,7 @@ function sendCommand(type) {
 }
 //無限ループアニメーション
 function animate(){
-    window.requestAnimationFrame(animate);
+    animateId = window.requestAnimationFrame(animate);
     
     background.update();
     shop.update();
