@@ -14,8 +14,7 @@ function towardConditional ({rectangle1,rectangle2}){
     )
 }
 //勝負判定
-function determineWinner({player,enemy,timerId}){
-    clearTimeout(timerId);
+function determineWinner({player,enemy}){
     document.querySelector('#displayText').style.display = 'flex';
     $('.again').show();
     if(player.health === enemy.health){
@@ -27,19 +26,18 @@ function determineWinner({player,enemy,timerId}){
     }
 }
 
-//timer
-let timer = 60
 let timerId = null
-function decreaseTimer(){
+function decreaseTimer(timer){
     if(timer > 0){
         timerId = setTimeout(decreaseTimer, 1000);
         timer --;
-        document.querySelector('#timer').innerHTML = timer;
     }
     if(timer === 0){
         determineWinner({player,enemy,timerId});
+		clearTimeout(timerId);
         gameState = false;
     }
 }
+
 
 

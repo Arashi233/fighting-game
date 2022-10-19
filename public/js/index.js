@@ -42,7 +42,8 @@ let enemy = null;
 let lastUpdate = Date.now()
 let now = Date.now()
 let dt = now - lastUpdate
-
+let me
+let serverData 
 //背景image
 const background = new Sprite({
     position:{
@@ -273,7 +274,10 @@ $(function () {
 		}
 	})
     socket.on('timeSync',function(json){
-        console.log(json)
+        serverData = json
+    })
+    socket.on('timeend',function(){
+        determineWinner({player,enemy});
     })
     // ゲーム開始メッセージを受け
 	socket.on('start',function(json) {
@@ -282,49 +286,43 @@ $(function () {
         gameObjects[jsonData[0].socket] = player
         gameObjects[jsonData[1].socket] = enemy
 		stepTime = 0
-
-        // socket.emit('gameObj',)
+        serverData = {
+            timer:60,
+            player:{
+                position:player.position,
+                health:player.health,
+            },
+            enemy:{
+                position:enemy.position,
+                health:enemy.health,
+            }}
         $(".container").show()
-		showTips("ゲーム開始")
-        decreaseTimer();
+        showTips("ゲーム開始")
         animate();
         gameStatus = 1;
         socket.emit('inigameobj',{
             player:{
                 position:player.position,
-                velocity:player.velocity,
                 health:player.health,
-                lastKey:player.lastKey,
-                height:player.height,
-                keys:{
-                    a:{
-                        pressed :false
-                    },
-                    d:{
-                        pressed :false
-                    },
-                }
             },
             enemy:{
                 position:enemy.position,
-                velocity:enemy.velocity,
                 health:enemy.health,
-                lastKey:enemy.lastKey,
-                height:enemy.height,
-                keys:{
-                    a:{
-                        pressed :false
-                    },
-                    d:{
-                        pressed :false
-                    },
-                }
-            }
+            },
+            socketId:currentId
         })
 	})
+    socket.on('userCharacter',function(json){
+        if(json.me == 'player'){
+            me = player
+        }else if(json.me == 'enemy'){
+            me = enemy
+        }
+    })
+    
     socket.on('message',function(json){
-        console.log(json)
         if(gameStatus == 1) {
+            
             let command = json
             recvCommands.push(command)
             stepTime = command.step
@@ -383,6 +381,17 @@ $(function () {
                     }
 					obj.move()
                     obj.updateSprite()
+                    let data = {
+                        position:me.position,
+                        health:me.health,
+                        type:'position'
+                    }
+                    if(me == player){
+                        data.character = 'player';
+                    }else if(me == enemy){
+                        data.character = 'enemy';
+                    }
+                    socket.emit('update',data)
 				}
                 recvCommands.shift()
         }
@@ -416,6 +425,7 @@ function animate(){
     player.update();
     enemy.update();
     game();
+    update();
     //向き
     if(towardConditional({rectangle1:player,rectangle2:enemy})){
         player.toward = 0;
@@ -425,7 +435,21 @@ function animate(){
         enemy.toward = 0;
     }
 }
-
+function update(){
+    if(serverData.timer<=0){
+        determineWinner({player,enemy});
+        gameState = false;
+    }
+    if(serverData.timer >=0){
+        document.querySelector('#timer').innerHTML = serverData.timer;
+    }
+    if(Math.abs(serverData.enemy.position.x - enemy.position.x)>400){
+        enemy.position.x = serverData.enemy.position.x
+    }
+    if(Math.abs(serverData.player.position.x - player.position.x)>400){
+        player.position.x = serverData.player.position.x
+    }
+}
 function game(){
     if(
         rectangularCollision({
@@ -454,7 +478,7 @@ function game(){
         enemy.isAttacking = false;
         enemy.attacktime =  new Date().getTime();
         if(player.health > 0){
-            player.health -= 20;
+            player.health -= 10;
             document.querySelector('#playerHealth').style.width = player.health + '%'
         }
     }
@@ -462,7 +486,8 @@ function game(){
         enemy.isAttacking = false;
     }
     if(enemy.health <= 0 || player.health <= 0){
-        determineWinner({player,enemy,timerId});
+        determineWinner({player,enemy});
+		socket.emit('timeend')
         gameState = false;
     }
 }
