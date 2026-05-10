@@ -2,145 +2,199 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const path = require('path');
-const fs = require('fs');
-const userList = new Array();
-const router = require('./router')
+const router = require('./router');
 
-const gravity = 0.3
-let g_onlines = [] // オンラインユーザー
-let g_commands = new Array() // コマンド
-let g_joinCount = 0 // 入った人数
-let g_maxJoinCount = 2 // 最大人数
-let g_stepTime = 0 // step
-let g_stepInterval = 100 // step　ms
-let player=null;
-let enemy=null;
+let g_onlines = [];
+let g_joinCount = 0;
+const g_maxJoinCount = 2;
+const g_stepInterval = 100;
+let player = null;
+let enemy = null;
 let gameState = false;
-const STATUS = {
-	WAIT:1,
-	START:2
-}
-let g_gameStatus = STATUS.WAIT;
 let timer = 0;
-let timerId = null
-let timeSyncTimerId = null
-app.engine('html',require('express-art-template'))
+let timerId = null;
+let timeSyncTimerId = null;
+
+app.engine('html', require('express-art-template'));
 app.use(express.static('./'));
-app.use(router)
+app.use(router);
 
-io.on('connection', function(socket){
-  socket.emit("open", {id:socket.id, stepInterval:g_stepInterval})
+function getAccountIndex(socketId) {
+	return g_onlines.findIndex((user) => user.socket === socketId);
+}
 
-	//ユーザーID
-	function getAccount(socketId) {
-		for(let key in g_onlines) {
-			if(socketId == g_onlines[key].socket) {
-				return key
-			}
-		}
+function buildState() {
+	return {
+		timer: timer,
+		player: player,
+		enemy: enemy
+	};
+}
+
+function applyDamage(target, damage) {
+	if (!target) {
+		return;
 	}
+	target.health = Math.max(0, target.health - damage);
+}
+
+function broadcastState() {
+	if (!gameState || !player || !enemy) {
+		return;
+	}
+	io.sockets.emit('timeSync', buildState());
+}
+
+function clearGameTimers() {
+	if (timerId) {
+		clearTimeout(timerId);
+		timerId = null;
+	}
+	if (timeSyncTimerId) {
+		clearInterval(timeSyncTimerId);
+		timeSyncTimerId = null;
+	}
+}
+
+function startStateSync() {
+	if (timeSyncTimerId) {
+		return;
+	}
+	timeSyncTimerId = setInterval(broadcastState, g_stepInterval);
+}
+
+function decreaseTimer() {
+	clearTimeout(timerId);
+	if (!gameState) {
+		return;
+	}
+	if (timer >= 0) {
+		timerId = setTimeout(decreaseTimer, 1000);
+		timer--;
+	}
+	if (timer < 0) {
+		io.sockets.emit('timeend');
+		clearGameTimers();
+		gameState = false;
+	}
+}
+
+io.on('connection', function(socket) {
+	socket.emit('open', { id: socket.id, stepInterval: g_stepInterval });
 
 	socket.on('join', function(json) {
-		// ゲーム参加
-		let userData = {account:json['account'],socket: socket.id, online: true};
-		g_onlines.push(userData)
-		if(g_joinCount < g_maxJoinCount) {
-			console.log(json['account'], "参加した")
-			socket.emit('join', {result:true, message:"マッチング中..."})
-			console.log(g_joinCount)
-			g_joinCount++
+		if (g_onlines.some((user) => user.socket === socket.id)) {
+			return;
 		}
-		// ゲーム開始
-		if(g_joinCount == g_maxJoinCount) {
-			g_commands = new Array()
-			g_commands_histroy = new Array()
-			g_gameStatus = 1
-			g_joinCount = 0
-			timer = 60
-			gameState = true
-			decreaseTimer()
-			io.sockets.emit('start', JSON.stringify(g_onlines))
+		if (g_onlines.length >= g_maxJoinCount) {
+			socket.emit('join', { result: false, message: 'room is full' });
+			return;
 		}
-	})
-	socket.on('inigameobj',function(json){
-		player = json.player;
-		enemy = json.enemy;
-		player.socketId = g_onlines[0].socket;
-		enemy.socketId = g_onlines[1].socket;
-		if(json.socketId == player.socketId){
-			socket.emit('userCharacter',{me:'player'})
-		}else if(json.socketId == enemy.socketId){
-			socket.emit('userCharacter',{me:'enemy'})
-		}
-		stepUpdate()
-	})
-	socket.on('uphealthdate',function(json){
-		
-		console.log(player.health)
-        if(json.character == 'player'){
-			player.health -= 10
-		}
-        if(json.character == 'enemy'){
-			enemy.health -= 20
-		}
-		socket.emit('uphealthdate', {timer:timer, player:player,enemy:enemy})
-    })
-	socket.on('disconnect', function () {
-		let accountkey = getAccount(socket.id)
-		g_gameStatus = false
-		if(accountkey) {
-			console.log(g_onlines[accountkey].account, "退室した")
-			let isGameOver = true
-			for(let key in g_onlines) {
-			}
-			if(isGameOver) {
-				io.sockets.emit('system', "ゲーム終了")
-				g_stepTime = 0
-				console.log("ゲーム終了")
-			} else {
-				io.sockets.emit('system', g_onlines[accountkey].account + "退室した！")
-			}
-			g_onlines.splice(accountkey,1);
-		}
-	})
 
-	socket.on("message", function (msg) {
-		if(gameState){
-			io.emit("message", msg) 
+		let userData = { account: json.account, socket: socket.id, online: true };
+		g_onlines.push(userData);
+
+		if (g_joinCount < g_maxJoinCount) {
+			console.log(json.account, 'joined');
+			socket.emit('join', { result: true, message: 'matching...' });
+			g_joinCount++;
 		}
-	})
-  socket.on('disconnect', function(msg){
-    io.emit('end',socket.name)
-  })
-  socket.on('timeend',function(){
-	
-	clearTimeout(timerId);
-	clearTimeout(timeSyncTimerId);
-})
-  socket.on('update', function(json){
-	if(json.character == 'player'){
-		player.position = json.position
-		player.health = json.health
-	}else if(json.character == 'enemy'){
-		enemy.position = json.position
-		enemy.health = json.health
-	}
-  })
-  function stepUpdate() {
-	  timeSyncTimerId =  setTimeout(stepUpdate, 100);
-	  socket.emit('timeSync', {timer:timer, player:player,enemy:enemy})
-  }
-function decreaseTimer(){
-	if(timer >= 0){
-		timerId = setTimeout(decreaseTimer, 1000);
-		timer --;
-	}
-	if(timer < 0){
-		socket.emit('timeend')
-	  }
-  }
+
+		if (g_joinCount === g_maxJoinCount) {
+			g_joinCount = 0;
+			timer = 60;
+			gameState = true;
+			player = null;
+			enemy = null;
+			clearGameTimers();
+			decreaseTimer();
+			io.sockets.emit('start', JSON.stringify(g_onlines));
+		}
+	});
+
+	socket.on('inigameobj', function(json) {
+		if (!player || !enemy) {
+			player = json.player;
+			enemy = json.enemy;
+			if (g_onlines[0]) {
+				player.socketId = g_onlines[0].socket;
+			}
+			if (g_onlines[1]) {
+				enemy.socketId = g_onlines[1].socket;
+			}
+			startStateSync();
+		}
+
+		if (player && json.socketId === player.socketId) {
+			socket.emit('userCharacter', { me: 'player' });
+		} else if (enemy && json.socketId === enemy.socketId) {
+			socket.emit('userCharacter', { me: 'enemy' });
+		}
+
+		broadcastState();
+	});
+
+	socket.on('message', function(msg) {
+		if (gameState) {
+			io.emit('message', msg);
+		}
+	});
+
+	socket.on('update', function(json) {
+		if (!player || !enemy) {
+			return;
+		}
+		if (json.character === 'player') {
+			player.position = json.position;
+		} else if (json.character === 'enemy') {
+			enemy.position = json.position;
+		}
+	});
+
+	socket.on('hit', function(json) {
+		if (!player || !enemy) {
+			return;
+		}
+		if (json.target === 'player') {
+			applyDamage(player, json.damage);
+		} else if (json.target === 'enemy') {
+			applyDamage(enemy, json.damage);
+		}
+		broadcastState();
+		if (player.health <= 0 || enemy.health <= 0) {
+			gameState = false;
+			clearGameTimers();
+			io.sockets.emit('timeend');
+		}
+	});
+
+	socket.on('attack', function(json) {
+		if (!gameState) {
+			return;
+		}
+		io.emit('attack', json);
+	});
+
+	socket.on('timeend', function() {
+		gameState = false;
+		clearGameTimers();
+	});
+
+	socket.on('disconnect', function() {
+		const accountIndex = getAccountIndex(socket.id);
+		if (accountIndex !== -1) {
+			const account = g_onlines[accountIndex].account;
+			g_onlines.splice(accountIndex, 1);
+			io.sockets.emit('system', account + ' disconnected');
+		}
+		gameState = false;
+		player = null;
+		enemy = null;
+		clearGameTimers();
+		io.emit('end', socket.name);
+	});
 });
+
 http.listen(3000, function() {
-  console.log('listening on http://localhost:3000/game');
+	console.log('listening on http://localhost:3000/game');
 });

@@ -2,29 +2,26 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8'>
-<title></title>
+<title>Fighting Game</title>
 <link type="text/css" rel="stylesheet" href="./public/index.css" />
 <link rel="stylesheet" type="text/css" href="./public/main.css">
-<script src = "./public/js/jquery.min.js"></script>
+<script src="./public/js/jquery.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="login">
-		<p id="title">ファイティングゲーム</p>
+		<p id="title">Fighting Game</p>
 		<input type="text" id="account" />
-		<button id="start_btn">ゲーム開始</button>
+		<button id="start_btn">Start Game</button>
 	</div>
     <div id="tips"></div>
     <div class="container" style="display:none">
         <div class="s-container">
-            <!-- player health -->
             <div class="health-bar-shell">
                 <div class="health-bar-mask player-health-mask"></div>
                 <div id="playerHealth" class="health-bar player-health"></div>
             </div>
-            <!-- timer -->
             <div class="timer" id="timer">10</div>
-            <!-- enemy health -->
             <div class="health-bar-shell">
                 <div class="health-bar-mask"></div>
                 <div id="enemyHealth" class="health-bar enemy-health"></div>
@@ -33,11 +30,11 @@
         <div class="displayText" id="displayText"></div>
         <canvas id="cv1"></canvas>
         <div class="again">
-            <button id="again_btn">play again</button>
+            <button id="again_btn">Play Again</button>
         </div>
     </div>
 </body>
-<script src = "./public/js/utils.js"></script>
-<script src = "./public/js/classes.js"></script>
-<script src = "./public/js/index.js"></script>
-</html> 
+<script src="./public/js/utils.js"></script>
+<script src="./public/js/classes.js"></script>
+<script src="./public/js/index.js"></script>
+</html>
